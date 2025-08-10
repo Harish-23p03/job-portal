@@ -42,8 +42,8 @@ const UpdateProfileDialog = ({ open, setOpen }) => {
         formData.append("bio", input.bio);
         formData.append("skills", input.skills);
         if (input.file) {
-            formData.append("file", input.file);
-        }
+    formData.append("resume", input.file); // ✅ This matches backend!
+}
         try {
             setLoading(true);
             const res = await axios.post(`${USER_API_END_POINT}/profile/update`, formData, {

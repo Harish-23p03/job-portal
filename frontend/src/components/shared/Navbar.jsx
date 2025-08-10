@@ -63,14 +63,32 @@ const Navbar = () => {
                             <Popover>
                                 <PopoverTrigger asChild>
                                     <Avatar className="cursor-pointer">
-                                        <AvatarImage src={user?.profile?.profilePhoto} alt="@shadcn" />
+                                        <AvatarImage
+                                            src={
+                                                user?.profile?.profilePicUrl
+                                                    ? user.profile.profilePicUrl.startsWith("http")
+                                                        ? user.profile.profilePicUrl
+                                                        : `http://localhost:8001${user.profile.profilePicUrl}`
+                                                    : "https://www.shutterstock.com/image-vector/circle-line-simple-design-logo-600nw-2174926871.jpg"
+                                            }
+                                            alt="@shadcn"
+                                        />
                                     </Avatar>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-80">
                                     <div className=''>
                                         <div className='flex gap-2 space-y-2'>
                                             <Avatar className="cursor-pointer">
-                                                <AvatarImage src={user?.profile?.profilePhoto} alt="@shadcn" />
+                                                <AvatarImage
+                                                    src={
+                                                        user?.profile?.profilePicUrl
+                                                            ? user.profile.profilePicUrl.startsWith("http")
+                                                                ? user.profile.profilePicUrl
+                                                                : `http://localhost:8001${user.profile.profilePicUrl}`
+                                                            : "https://www.shutterstock.com/image-vector/circle-line-simple-design-logo-600nw-2174926871.jpg"
+                                                    }
+                                                    alt="@shadcn"
+                                                />
                                             </Avatar>
                                             <div>
                                                 <h4 className='font-medium'>{user?.fullname}</h4>

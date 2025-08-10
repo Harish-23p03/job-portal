@@ -100,3 +100,36 @@ export const getAdminJobs = async (req, res) => {
         console.log(error);
     }
 }
+
+import { User } from "../models/user.model.js";
+
+// Save a job for a user
+export const saveJobForUser = async (req, res) => {
+    try {
+        const userId = req.id; // or req.user._id
+        const { jobId } = req.body;
+        const user = await User.findById(userId);
+        if (!user.savedJobs.includes(jobId)) {
+            user.savedJobs.push(jobId);
+            await user.save();
+            return res.status(200).json({ message: "Job saved!", success: true });
+        } else {
+            return res.status(400).json({ message: "Job already saved!", success: false });
+        }
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Server error", success: false });
+    }
+};
+
+// Get all saved jobs for a user
+export const getSavedJobs = async (req, res) => {
+    try {
+        const userId = req.id;
+        const user = await User.findById(userId).populate("savedJobs");
+        return res.status(200).json({ jobs: user.savedJobs, success: true });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Server error", success: false });
+    }
+};

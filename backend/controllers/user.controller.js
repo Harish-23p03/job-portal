@@ -7,16 +7,38 @@ import cloudinary from "../utils/cloudinary.js";
 export const register = async (req, res) => {
     try {
         const { fullname, email, phoneNumber, password, role } = req.body;
-         
         if (!fullname || !email || !phoneNumber || !password || !role) {
             return res.status(400).json({
                 message: "Something is missing",
                 success: false
             });
-        };
-        const file = req.file;
-        const fileUri = getDataUri(file);
-        const cloudResponse = await cloudinary.uploader.upload(fileUri.content);
+        }
+
+        // Remove Cloudinary logic
+        // const file = req.file;
+        // let cloudResponse = { secure_url: "" };
+        // if (file) {
+        //     const fileUri = getDataUri(file);
+        //     const isPDF = file.mimetype === "application/pdf";
+        //     cloudResponse = await cloudinary.uploader.upload(fileUri.content, {
+        //         resource_type: isPDF ? "raw" : "auto"
+        //     });
+        // }
+
+        // Add this for local resume storage
+        const file = req.file; // or req.files?.resume?.[0] if using .fields()
+        let resumePath = "";
+        let resumeOriginalName = "";
+        if (file) {
+            resumePath = `/resumes/${file.filename}`;
+            resumeOriginalName = file.originalname;
+        }
+
+        // Handle profile picture (assuming multer .fields([{name:'resume'}, {name:'profilePic'}]))
+        let profilePicPath = "";
+        if (req.files && req.files.profilePic && req.files.profilePic[0]) {
+            profilePicPath = `/profilePics/${req.files.profilePic[0].filename}`;
+        }
 
         const user = await User.findOne({ email });
         if (user) {
@@ -33,8 +55,10 @@ export const register = async (req, res) => {
             phoneNumber,
             password: hashedPassword,
             role,
-            profile:{
-                profilePhoto:cloudResponse.secure_url,
+            profile: {
+                profilePicUrl: profilePicPath || "https://www.shutterstock.com/image-vector/circle-line-simple-design-logo-600nw-2174926871.jpg", // handle profile pic if needed
+                resume: resumePath,
+                resumeOriginalName: resumeOriginalName,
             }
         });
 
@@ -43,13 +67,15 @@ export const register = async (req, res) => {
             success: true
         });
     } catch (error) {
-        console.log(error);
+        console.error("Register error:", error);
+        return res.status(500).json({ message: "Internal server error", success: false });
     }
 }
+
 export const login = async (req, res) => {
     try {
         const { email, password, role } = req.body;
-        
+
         if (!email || !password || !role) {
             return res.status(400).json({
                 message: "Something is missing",
@@ -99,8 +125,10 @@ export const login = async (req, res) => {
         })
     } catch (error) {
         console.log(error);
+        return res.status(500).json({ message: "Internal server error", success: false });
     }
 }
+
 export const logout = async (req, res) => {
     try {
         return res.status(200).cookie("token", "", { maxAge: 0 }).json({
@@ -109,46 +137,40 @@ export const logout = async (req, res) => {
         })
     } catch (error) {
         console.log(error);
+        return res.status(500).json({ message: "Internal server error", success: false });
     }
 }
+
 export const updateProfile = async (req, res) => {
     try {
         const { fullname, email, phoneNumber, bio, skills } = req.body;
-        
-        const file = req.file;
-        // cloudinary ayega idhar
-        const fileUri = getDataUri(file);
-        const cloudResponse = await cloudinary.uploader.upload(fileUri.content);
 
-
+        let resumeFile = req.files && req.files.resume ? req.files.resume[0] : null;
 
         let skillsArray;
-        if(skills){
+        if (skills) {
             skillsArray = skills.split(",");
         }
-        const userId = req.id; // middleware authentication
+        const userId = req.id;
         let user = await User.findById(userId);
 
         if (!user) {
             return res.status(400).json({
                 message: "User not found.",
                 success: false
-            })
+            });
         }
         // updating data
-        if(fullname) user.fullname = fullname
-        if(email) user.email = email
-        if(phoneNumber)  user.phoneNumber = phoneNumber
-        if(bio) user.profile.bio = bio
-        if(skills) user.profile.skills = skillsArray
-      
-        // resume comes later here...
-        if(cloudResponse){
-            user.profile.resume = cloudResponse.secure_url // save the cloudinary url
-            user.profile.resumeOriginalName = file.originalname // Save the original file name
+        if (fullname) user.fullname = fullname;
+        if (email) user.email = email;
+        if (phoneNumber) user.phoneNumber = phoneNumber;
+        if (bio) user.profile.bio = bio;
+        if (skills) user.profile.skills = skillsArray;
+
+        if (resumeFile) {
+            user.profile.resume = `/resumes/${resumeFile.filename}`;
+            user.profile.resumeOriginalName = resumeFile.originalname;
         }
-
-
         await user.save();
 
         user = {
@@ -158,14 +180,15 @@ export const updateProfile = async (req, res) => {
             phoneNumber: user.phoneNumber,
             role: user.role,
             profile: user.profile
-        }
+        };
 
         return res.status(200).json({
-            message:"Profile updated successfully.",
+            message: "Profile updated successfully.",
             user,
-            success:true
-        })
+            success: true
+        });
     } catch (error) {
         console.log(error);
+        return res.status(500).json({ message: "Internal server error", success: false });
     }
 }
